@@ -1,6 +1,5 @@
 ﻿using System;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
@@ -11,9 +10,7 @@ using Not_a_pad.Annotations;
 
 namespace Not_a_pad.Windows
 {
-    /// <summary>
-    /// Interaction logic for NoteWindow.xaml
-    /// </summary>
+    [Serializable]
     public partial class NoteWindow : INotifyPropertyChanged
     {
         public string Text { get; set; }
@@ -37,6 +34,10 @@ namespace Not_a_pad.Windows
         {
             InitializeComponent();
             DataContext = this;
+            Text = "";
+            Label = "";
+            Brush = (SolidColorBrush)new BrushConverter().ConvertFrom("#feff9c");
+            SetNoteColor(Brush);
         }
 
         public NoteWindow(string label)
@@ -45,6 +46,16 @@ namespace Not_a_pad.Windows
             DataContext = this;
             Label = label;
             Brush = (SolidColorBrush) new BrushConverter().ConvertFrom("#feff9c");
+            SetNoteColor(Brush);
+        }
+
+        public NoteWindow(string label, string text, SolidColorBrush brush)
+        {
+            InitializeComponent();
+            DataContext = this;
+            Label = label;
+            Text = text;
+            Brush = brush;
             SetNoteColor(Brush);
         }
 
@@ -82,6 +93,7 @@ namespace Not_a_pad.Windows
         private void NoteLabel_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
             var clickedLabel = sender as Label;
+
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

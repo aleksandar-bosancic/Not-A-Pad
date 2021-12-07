@@ -9,7 +9,8 @@
         Height="450" 
         Width="546" 
         WindowStyle="SingleBorderWindow"
-        Background="#34495E">
+        Background="#34495E"
+        Closing="MainWindow_OnClosing">
     <DockPanel>
         <Grid DockPanel.Dock="Left">
             <StackPanel Orientation="Vertical">
