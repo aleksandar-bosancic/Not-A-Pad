@@ -1,102 +1,105 @@
-﻿using System.Collections.ObjectModel;
+﻿using System;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
-using System.Xml.Serialization;
-using Not_a_pad.Annotations;
+using Not_a_pad.Util;
 
 namespace Not_a_pad.Windows
 {
-    public partial class MainWindow : INotifyPropertyChanged
+    public partial class MainWindow
     {
+        //Must be public or it wont bind to window properly for some reason.
         public ObservableCollection<NoteWindow> ListOfNotes { get; set; }
-
-        public event PropertyChangedEventHandler PropertyChanged;
 
         public MainWindow()
         {
-            //Deserialize();
+            ObservableCollection<NoteWindow> deserialized = SerializationUtil.Deserialize();
+            ListOfNotes = deserialized ?? new ObservableCollection<NoteWindow>();
             InitializeComponent();
-            ListOfNotes = new ObservableCollection<NoteWindow>();
             DataContext = this;
-        }
-
-        private void Serialize()
-        {
-            NoteWindow[] serializationList = ListOfNotes.ToArray();
-            Stream outStream = File.Open("data.xml", FileMode.Create);
-            XmlSerializer serializer = new XmlSerializer(typeof(NoteWindow[]));
-            serializer.Serialize(outStream, serializationList);
-            outStream.Close();
-        }
-
-        private void Deserialize()
-        {
-            if (File.Exists("data.xml"))
-            {
-                Stream inStream = File.Open("data.xml", FileMode.Open);
-                XmlSerializer serializer = new XmlSerializer(typeof(NoteWindow[]));
-                var serializationList = (NoteWindow[])serializer.Deserialize(inStream);
-                if (serializationList != null)
-                    ListOfNotes = new ObservableCollection<NoteWindow>(serializationList);
-                foreach (var note in ListOfNotes)
-                {
-                    note.Show();
-                }
-            }
         }
 
         private void New_Note(object sender, RoutedEventArgs e)
         {
-            this.ListBox.SelectedItem = null;
-            int count = ListOfNotes.Count;
-            NoteWindow noteWindow = new NoteWindow("Note " + count);
-            ListOfNotes.Add(noteWindow);
-            foreach (var not in ListOfNotes)
+            if (ListOfNotes.Count > 20)
             {
-                Trace.WriteLine(not.Label + " " + not.Brush.ToString());
+                MessageBox.Show("Maximum number of notes reached", "Limit alert", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
             }
+            ListBox.SelectedItem = null;
+            NoteWindow noteWindow = new();
+            noteWindow.PropertyChanged += NoteChanged;
+            ListOfNotes.Add(noteWindow);
             noteWindow.Show();
         }
 
         private void PinButton_OnClick(object sender, RoutedEventArgs e)
         {
-            var selectedNote = (NoteWindow)ListBox.SelectedItem;
-            selectedNote?.Show();
+            NoteWindow selectedNote = (NoteWindow)ListBox.SelectedItem;
+            if (selectedNote.IsVisible)
+            {
+                selectedNote.Hide();
+            }
+            else
+            {
+                if (selectedNote.IsLoaded)
+                {
+                    selectedNote.Show();
+                }
+                else if (selectedNote.isClosed)
+                {
+                    NoteWindow replaceNote = new(selectedNote.Text, selectedNote.BrushValue);
+                    ListOfNotes.Remove(selectedNote);
+                    ListOfNotes.Add(replaceNote);
+                    replaceNote.Show();
+                }
+            }
         }
 
         private void DeleteButton_OnClick(object sender, RoutedEventArgs e)
         {
-            var selectedNote = (NoteWindow)ListBox.SelectedItem;
+            NoteWindow selectedNote = (NoteWindow)ListBox.SelectedItem;
             selectedNote.Hide();
             ListOfNotes.Remove(selectedNote);
         }
 
         private void ColorCombobox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            var selectedNote = (NoteWindow)ListBox.SelectedItem;
-            if (sender is ComboBox combo && selectedNote != null)
-            {
-                var brush = combo.SelectedItem as SolidColorBrush;
-                selectedNote.Brush = brush;
-                selectedNote.SetNoteColor(brush);
-            }
-        }
-
-        [NotifyPropertyChangedInvocator]
-        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = "")
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            NoteWindow selectedNote = (NoteWindow)ListBox.SelectedItem;
+            if (sender is not ComboBox combo || selectedNote == null) return;
+            SolidColorBrush brush = combo.SelectedItem as SolidColorBrush;
+            selectedNote.Brush = brush;
+            selectedNote.SetNoteColor(brush);
         }
 
         private void MainWindow_OnClosing(object sender, CancelEventArgs e)
         {
-            //Serialize();
+            SerializationUtil.Serialize(ListOfNotes);
+            foreach (NoteWindow noteWindow in ListOfNotes)
+            {
+                noteWindow.Close();
+            }
+        }
+
+        private void ListBox_OnPreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            NoteWindow note = (NoteWindow)ListBox.SelectedItem;
+            note?.Focus();
+        }
+
+        private void NoteChanged(object sender, PropertyChangedEventArgs eventArgs)
+        {
+            switch (eventArgs.PropertyName)
+            {
+                case null:
+                    return;
+                case "Text":
+                    break;
+            }
         }
     }
 }

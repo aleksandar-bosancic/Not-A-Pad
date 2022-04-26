@@ -37,15 +37,19 @@
                 <ColumnDefinition />
                 <ColumnDefinition Width="30"/>
             </Grid.ColumnDefinitions>
-            <Label MouseDoubleClick="NoteLabel_MouseDoubleClick" 
-                   MouseLeftButtonDown="NoteLabel_MouseLeftButtonDown" 
-                   HorizontalContentAlignment="Center" 
+            <Label MouseLeftButtonDown="NoteLabel_MouseLeftButtonDown" 
                    Name="NoteLabel" 
-                   Content="{Binding Label}" 
                    DockPanel.Dock="Top" FontWeight="Bold" 
                    FontStretch="Normal" FontSize="16" 
-                   HorizontalAlignment="Stretch"/>
-            <Button Template="{DynamicResource CloseNoteButton}" x:Name="ButtonB" Click="ButtonB_OnClick" Grid.Column="1" Margin="2" BorderBrush="Transparent">
+                   HorizontalAlignment="Stretch"
+                   Height="30px"/>
+            <Button Template="{DynamicResource CloseNoteButton}" 
+                    Click="ButtonB_OnClick" 
+                    Grid.Column="1" 
+                    Margin="0" 
+                    BorderBrush="Transparent"
+                    Height="30px"
+                    Width="28px">
                 <Button.Background>
                     <ImageBrush Stretch="UniformToFill" 
                                 TileMode="Tile" 
@@ -55,7 +59,8 @@
         </Grid>
         <RichTextBox Name="NoteTextBox" 
                      LostFocus="NoteTextBox_LostFocus"
-                     TextChanged="NoteTextBox_OnTextChanged">
+                     TextChanged="NoteTextBox_OnTextChanged"
+                     VerticalScrollBarVisibility="Auto">
             <RichTextBox.Resources>
                 <Style TargetType="{x:Type Paragraph}">
                     <Setter Property="Margin" Value="1"/>

@@ -1,23 +1,54 @@
 ﻿using System;
 using System.ComponentModel;
+using System.Diagnostics;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Xml.Serialization;
 using Not_a_pad.Annotations;
 
 namespace Not_a_pad.Windows
 {
-    [Serializable]
     public partial class NoteWindow : INotifyPropertyChanged
     {
-        public string Text { get; set; }
-        public string Label { get; set; }
+        public event PropertyChangedEventHandler PropertyChanged;
 
+        public string BrushValue { get; set; }
+        
+        public bool isClosed { get; set; }
+
+        private string _label;
+
+        public string Label
+        {
+            get => _label;
+            set
+            {
+                if (value == _label) return;
+                _label = value;
+                OnPropertyChanged();
+            }
+        }
+
+        private string _text;
+        public string Text
+        {
+            get => _text;
+            set
+            {
+                if(value == _text)return;
+                _text = value;
+                OnPropertyChanged();
+            }
+
+        }
+        
         private SolidColorBrush _brush;
-
+        
         public SolidColorBrush Brush
         {
             get => _brush;
@@ -25,7 +56,9 @@ namespace Not_a_pad.Windows
             set
             {
                 if (value == _brush) return;
-                _brush = value;
+                BrushValue = value.ToString();
+                Color clr = (Color)ColorConverter.ConvertFromString(BrushValue)!;
+                _brush = new SolidColorBrush(clr);
                 OnPropertyChanged();
             }
         }
@@ -40,23 +73,15 @@ namespace Not_a_pad.Windows
             SetNoteColor(Brush);
         }
 
-        public NoteWindow(string label)
+        public NoteWindow(string text, string brushValue)
         {
             InitializeComponent();
             DataContext = this;
-            Label = label;
-            Brush = (SolidColorBrush) new BrushConverter().ConvertFrom("#feff9c");
-            SetNoteColor(Brush);
-        }
-
-        public NoteWindow(string label, string text, SolidColorBrush brush)
-        {
-            InitializeComponent();
-            DataContext = this;
-            Label = label;
             Text = text;
-            Brush = brush;
+            BrushValue = brushValue;
+            Brush = (SolidColorBrush)new BrushConverter().ConvertFrom(brushValue);
             SetNoteColor(Brush);
+            NoteTextBox.AppendText(Text);
         }
 
         public void SetNoteColor(SolidColorBrush brush)
@@ -76,8 +101,8 @@ namespace Not_a_pad.Windows
             LinearGradientBrush linearGradient = new();
             linearGradient.GradientStops.Add(colorStop);
             linearGradient.GradientStops.Add(lightStop);
-            this.NoteTextBox.Background = linearGradient;
-            this.NoteLabel.Background = brush;
+            NoteTextBox.Background = linearGradient;
+            NoteLabel.Background = brush;
         }
 
         private void NoteLabel_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -87,36 +112,54 @@ namespace Not_a_pad.Windows
 
         private void NoteTextBox_LostFocus(object sender, RoutedEventArgs e)
         {
-            
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(_text));
         }
-
-        private void NoteLabel_MouseDoubleClick(object sender, MouseButtonEventArgs e)
-        {
-            var clickedLabel = sender as Label;
-
-        }
-
-        public event PropertyChangedEventHandler PropertyChanged;
 
         [NotifyPropertyChangedInvocator]
-        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        protected virtual void OnPropertyChanged([CallerMemberName] string name = null)
         {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            if (Text?.Length >= 10)
+            {
+                Label = Text.Substring(0, 9);
+            }
+            else
+            {
+                if (Text?.Length == 0)
+                {
+                    Label = String.Empty;
+                }
+                else
+                {
+                    Label = Text?.Substring(0, Text.Length - 1);
+                }
+            }
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
         }
 
         private void NoteWindow_OnClosing(object sender, CancelEventArgs e)
         {
-            e.Cancel = true;
+            isClosed = true;
+        }
+
+        public void CloseNote()
+        {
+            NoteWindow_OnClosing(null, new CancelEventArgs());
         }
 
         private void NoteTextBox_OnTextChanged(object sender, TextChangedEventArgs e)
         {
+            if (Text?.Length > 500)
+            {
+                MessageBox.Show("Maximum number of characters reached", "Limit alert", MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+            
             Text = new TextRange(NoteTextBox.Document.ContentStart, NoteTextBox.Document.ContentEnd).Text;
         }
 
         private void ButtonB_OnClick(object sender, RoutedEventArgs e)
         {
-            this.Hide();
+            Hide();
         }
     }
 }
